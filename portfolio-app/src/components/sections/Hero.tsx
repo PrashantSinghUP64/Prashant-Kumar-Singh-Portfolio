@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Download } from "lucide-react";
 import { personalInfo } from "@/lib/data";
 import { useEffect, useState } from "react";
 import {
@@ -153,6 +153,16 @@ export default function Hero() {
                 transition={{ duration: 0.2 }}
               >
                 <GithubIcon /> GitHub
+              </motion.a>
+              <motion.a
+                href="https://drive.google.com/uc?export=download&id=1yrVWEKjqQX3W9dvsEUZ1sKo0l_aomr1A"
+                target="_blank" rel="noopener noreferrer"
+                className="btn-outline"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={tapScale}
+                transition={{ duration: 0.2 }}
+              >
+                <Download size={16} /> Download CV
               </motion.a>
             </motion.div>
 

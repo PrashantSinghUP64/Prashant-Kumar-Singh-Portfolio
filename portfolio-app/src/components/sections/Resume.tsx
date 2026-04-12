@@ -5,8 +5,8 @@ import { FileText, ExternalLink } from "lucide-react";
 import { sectionHeader, textReveal, viewport, scaleIn } from "@/lib/animations";
 
 export default function Resume() {
-  const resumeUrl = "https://drive.google.com/file/d/18Y1BVVOQ-FC3aoKRRIA8TckN9kVCe87X/preview";
-  const viewUrl = "https://drive.google.com/file/d/18Y1BVVOQ-FC3aoKRRIA8TckN9kVCe87X/view?usp=sharing";
+  const resumeUrl = "https://drive.google.com/file/d/1yrVWEKjqQX3W9dvsEUZ1sKo0l_aomr1A/preview";
+  const viewUrl = "https://drive.google.com/file/d/1yrVWEKjqQX3W9dvsEUZ1sKo0l_aomr1A/view?usp=sharing";
 
   return (
     <section id="resume" className="py-28 relative overflow-hidden">
