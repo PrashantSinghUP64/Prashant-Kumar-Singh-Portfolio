@@ -2,10 +2,18 @@
 
 import { motion } from "framer-motion";
 import { personalInfo, socialLinks } from "@/lib/data";
-import { Mail, MapPin, Phone, Send } from "lucide-react";
+import { Mail, MapPin, Phone, Send, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import {
   slideLeft, slideRight, sectionHeader, textReveal, tapScale, viewport,
 } from "@/lib/animations";
+import { useState, useRef } from "react";
+import emailjs from "@emailjs/browser";
+
+// ─── EmailJS credentials (loaded from .env.local) ───────────────────
+const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!;
+const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!;
+// ────────────────────────────────────────────────────────────────────
 
 const contactItems = [
   { icon: <Mail size={18} />,   label: "Email",    value: personalInfo.email,    href: `mailto:${personalInfo.email}`, accent: "#a78bfa", bg: "rgba(124,58,237,0.1)", border: "rgba(124,58,237,0.2)" },
@@ -26,7 +34,108 @@ const labelStyle: React.CSSProperties = {
   marginBottom: "8px", color: "var(--fg-muted)",
 };
 
+const errorStyle: React.CSSProperties = {
+  fontSize: "0.72rem", color: "#f87171", marginTop: "5px",
+  display: "flex", alignItems: "center", gap: "4px",
+};
+
+interface FormData {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+interface FormErrors {
+  name?: string;
+  email?: string;
+  subject?: string;
+  message?: string;
+}
+
+function validateEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function Contact() {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [formData, setFormData] = useState<FormData>({
+    name: "", email: "", subject: "", message: "",
+  });
+  const [errors, setErrors]   = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus]   = useState<"idle" | "success" | "error">("idle");
+
+  // ── Validation ────────────────────────────────────────────────────
+  function validate(): FormErrors {
+    const errs: FormErrors = {};
+    if (!formData.name.trim())                       errs.name    = "Name is required.";
+    if (!formData.email.trim())                      errs.email   = "Email is required.";
+    else if (!validateEmail(formData.email))         errs.email   = "Please enter a valid email address.";
+    if (!formData.subject.trim())                    errs.subject = "Subject is required.";
+    if (!formData.message.trim())                    errs.message = "Message is required.";
+    return errs;
+  }
+
+  // ── Change handler ────────────────────────────────────────────────
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear inline error as user corrects the field
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  }
+
+  // ── Submit handler ────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("idle");
+
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name:  formData.name,
+          from_email: formData.email,
+          subject:    formData.subject,
+          message:    formData.message,
+          to_email:   "ps7027804@gmail.com",
+        },
+        EMAILJS_PUBLIC_KEY
+      );
+      setStatus("success");
+      setFormData({ name: "", email: "", subject: "", message: "" });
+      setErrors({});
+      // Auto-dismiss success banner after 6 s
+      setTimeout(() => setStatus("idle"), 6000);
+    } catch {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 6000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Focus / blur helpers ──────────────────────────────────────────
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = "rgba(124,58,237,0.5)";
+    e.target.style.boxShadow   = "0 0 0 3px rgba(124,58,237,0.08)";
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = "var(--border)";
+    e.target.style.boxShadow   = "none";
+  };
+
   return (
     <section id="contact" className="py-28 relative overflow-hidden">
       <motion.div
@@ -57,7 +166,7 @@ export default function Contact() {
             variants={slideLeft} initial="hidden" whileInView="visible" viewport={viewport}
             className="lg:col-span-2 space-y-5"
           >
-            {contactItems.map((item, i) => (
+            {contactItems.map((item) => (
               <motion.a
                 key={item.label}
                 href={item.href}
@@ -109,64 +218,127 @@ export default function Contact() {
             className="lg:col-span-3 card p-8"
           >
             <h3 className="text-2xl font-extrabold mb-7" style={{ color: "var(--fg)" }}>Send a Message</h3>
-            <form
-              className="space-y-5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const name    = (form.elements.namedItem("name")    as HTMLInputElement).value;
-                const email   = (form.elements.namedItem("email")   as HTMLInputElement).value;
-                const subject = (form.elements.namedItem("subject") as HTMLInputElement).value;
-                const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value;
-                window.location.href = `mailto:${personalInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`From: ${name} (${email})\n\n${message}`)}`;
-              }}
-            >
+
+            {/* ── Status banners ────────────────────────────────── */}
+            {status === "success" && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-sm font-medium"
+                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}
+              >
+                <CheckCircle size={16} className="flex-shrink-0" />
+                Message sent successfully! I'll get back to you soon. 🎉
+              </motion.div>
+            )}
+            {status === "error" && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-sm font-medium"
+                style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}
+              >
+                <AlertCircle size={16} className="flex-shrink-0" />
+                Something went wrong. Please try again or email me directly.
+              </motion.div>
+            )}
+
+            <form ref={formRef} className="space-y-5" onSubmit={handleSubmit} noValidate>
+              {/* Name + Email row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {[
-                  { id: "name",  type: "text",  label: "Your Name",  placeholder: "John Doe" },
-                  { id: "email", type: "email", label: "Your Email", placeholder: "john@example.com" },
-                ].map((field) => (
-                  <motion.div key={field.id} whileFocus={{ scale: 1.01 }}>
-                    <label htmlFor={field.id} style={labelStyle}>{field.label}</label>
+                {/* Name */}
+                <div>
+                  <motion.div whileFocus={{ scale: 1.01 }}>
+                    <label htmlFor="name" style={labelStyle}>Your Name</label>
                     <input
-                      type={field.type} id={field.id} name={field.id} required
-                      placeholder={field.placeholder} style={inputStyle}
-                      onFocus={(e) => { e.target.style.borderColor = "rgba(124,58,237,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
-                      onBlur={(e)  => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
+                      type="text" id="name" name="name" required
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={handleChange}
+                      style={{ ...inputStyle, borderColor: errors.name ? "rgba(239,68,68,0.5)" : undefined }}
+                      onFocus={onFocus} onBlur={onBlur}
                     />
                   </motion.div>
-                ))}
+                  {errors.name && (
+                    <p style={errorStyle}><AlertCircle size={11} />{errors.name}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <motion.div whileFocus={{ scale: 1.01 }}>
+                    <label htmlFor="email" style={labelStyle}>Your Email</label>
+                    <input
+                      type="email" id="email" name="email" required
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      style={{ ...inputStyle, borderColor: errors.email ? "rgba(239,68,68,0.5)" : undefined }}
+                      onFocus={onFocus} onBlur={onBlur}
+                    />
+                  </motion.div>
+                  {errors.email && (
+                    <p style={errorStyle}><AlertCircle size={11} />{errors.email}</p>
+                  )}
+                </div>
               </div>
 
+              {/* Subject */}
               <div>
                 <label htmlFor="subject" style={labelStyle}>Subject</label>
                 <input
                   type="text" id="subject" name="subject" required
                   placeholder="Project Inquiry / Hiring / Collaboration"
-                  style={inputStyle}
-                  onFocus={(e) => { e.target.style.borderColor = "rgba(124,58,237,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
-                  onBlur={(e)  => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
+                  value={formData.subject}
+                  onChange={handleChange}
+                  style={{ ...inputStyle, borderColor: errors.subject ? "rgba(239,68,68,0.5)" : undefined }}
+                  onFocus={onFocus} onBlur={onBlur}
                 />
+                {errors.subject && (
+                  <p style={errorStyle}><AlertCircle size={11} />{errors.subject}</p>
+                )}
               </div>
 
+              {/* Message */}
               <div>
                 <label htmlFor="message" style={labelStyle}>Message</label>
                 <textarea
                   id="message" name="message" rows={5} required
                   placeholder={`Hi Prashant, I'd love to discuss...`}
-                  style={{ ...inputStyle, resize: "none" }}
-                  onFocus={(e) => { e.target.style.borderColor = "rgba(124,58,237,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
-                  onBlur={(e)  => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none"; }}
+                  value={formData.message}
+                  onChange={handleChange}
+                  style={{ ...inputStyle, resize: "none", borderColor: errors.message ? "rgba(239,68,68,0.5)" : undefined }}
+                  onFocus={onFocus} onBlur={onBlur}
                 />
+                {errors.message && (
+                  <p style={errorStyle}><AlertCircle size={11} />{errors.message}</p>
+                )}
               </div>
 
+              {/* Submit button */}
               <motion.button
-                type="submit" className="btn-primary"
-                style={{ width: "100%", justifyContent: "center", padding: "14px 28px", fontSize: "1rem" }}
-                whileHover={{ scale: 1.03, y: -2 }} whileTap={tapScale}
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{
+                  width: "100%", justifyContent: "center",
+                  padding: "14px 28px", fontSize: "1rem",
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+                whileHover={loading ? {} : { scale: 1.03, y: -2 }}
+                whileTap={loading ? {} : tapScale}
                 transition={{ duration: 0.2 }}
               >
-                <Send size={16} /> Send Message
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    Send Message
+                  </>
+                )}
               </motion.button>
             </form>
           </motion.div>
