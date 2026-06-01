@@ -155,7 +155,7 @@ export default function Hero() {
                 <GithubIcon /> GitHub
               </motion.a>
               <motion.a
-                href="https://drive.google.com/uc?export=download&id=1yrVWEKjqQX3W9dvsEUZ1sKo0l_aomr1A"
+                href="https://drive.google.com/file/d/1xtMfWPlZTelnJhCVO5ftZqY6lyuoRY7P/view?usp=sharing"
                 target="_blank" rel="noopener noreferrer"
                 className="btn-outline"
                 whileHover={{ scale: 1.04, y: -2 }}
