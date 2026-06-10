@@ -98,24 +98,20 @@ export default function Skills() {
                     <div key={skill.name}>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-semibold" style={{ color: "var(--fg)" }}>{skill.name}</span>
-                        <motion.span
-                          initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
-                          viewport={viewport}
-                          transition={{ delay: skillIdx * 0.08 + 0.3 }}
+                        <span
                           className="text-xs font-bold mono"
                           style={{ background: `linear-gradient(90deg, ${colors.from}, ${colors.to})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                         >
                           {skill.proficiency}%
-                        </motion.span>
+                        </span>
                       </div>
                       <div className="skill-bar-track overflow-hidden" style={{ borderRadius: "99px" }}>
                         <motion.div
                           variants={barFill(skill.proficiency)}
                           initial="hidden"
                           whileInView="visible"
-                          viewport={viewport}
-                          transition={{ delay: skillIdx * 0.08 }}
+                          viewport={{ once: true, amount: 0.1 }}
+                          transition={{ delay: skillIdx * 0.08, duration: 1.1 }}
                           style={{
                             height: "100%", borderRadius: "99px",
                             background: `linear-gradient(90deg, ${colors.from}, ${colors.to})`,

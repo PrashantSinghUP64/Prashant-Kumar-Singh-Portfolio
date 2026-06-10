@@ -120,4 +120,4 @@ export const sectionHeader: Variants = {
 };
 
 // ── Viewport settings ─────────────────────────────────────────
-export const viewport = { once: true, margin: "-80px" };
+export const viewport = { once: true, margin: "0px" };
